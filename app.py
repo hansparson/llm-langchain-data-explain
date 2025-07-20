@@ -3,6 +3,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, AIMessage
 from typing import TypedDict, List, Literal
 from datetime import datetime
+import requests
 
 
 # =====================
@@ -10,7 +11,7 @@ from datetime import datetime
 # =====================
 
 class ChatState(TypedDict):
-    messages: List  # List of HumanMessage and AIMessage
+    messages: List
 
 
 # =====================
@@ -28,6 +29,17 @@ def get_current_time() -> str:
     now = datetime.now()
     return f"Sekarang jam {now.strftime('%H:%M:%S')} pada tanggal {now.strftime('%A, %d %B %Y')}."
 
+def get_weather(city: str = "Jakarta") -> str:
+    try:
+        url = f"https://wttr.in/{city}?format=3"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            return f"Cuaca di {city}: {response.text}"
+        else:
+            return f"Tidak bisa mengambil data cuaca untuk {city}. Coba lagi nanti."
+    except Exception as e:
+        return f"Gagal mengambil data cuaca: {str(e)}"
+
 
 # =====================
 # 4. LangGraph node
@@ -36,9 +48,14 @@ def get_current_time() -> str:
 def call_llm(state: ChatState) -> ChatState:
     user_input = state["messages"][-1].content.lower()
 
-    # Deteksi pertanyaan spesifik
+    # Deteksi waktu
     if any(kw in user_input for kw in ["jam berapa", "sekarang hari apa", "tanggal berapa"]):
         response = get_current_time()
+        return {"messages": state["messages"] + [AIMessage(content=response)]}
+
+    # Deteksi cuaca
+    if "cuaca" in user_input:
+        response = get_weather()
         return {"messages": state["messages"] + [AIMessage(content=response)]}
 
     # Jawaban biasa dari LLM lokal
