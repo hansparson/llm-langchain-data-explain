@@ -1,0 +1,9 @@
+langchain
+langchain-community
+langchainhub
+pypdf
+sentence-transformers
+chromadb
+ollama
+pandas
+openpyxl
